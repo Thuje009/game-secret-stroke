@@ -50,6 +50,30 @@ interface TurnInfo {
 const SERVER_URL =
   process.env.NEXT_PUBLIC_SERVER_URL || "http://localhost:3001";
 
+const wait = (ms: number) =>
+  new Promise((resolve) => setTimeout(resolve, ms));
+
+async function wakeServer(): Promise<boolean> {
+  for (let attempt = 1; attempt <= 15; attempt++) {
+    try {
+      const response = await fetch(`${SERVER_URL}/health`, {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      if (response.ok) {
+        return true;
+      }
+    } catch {
+      // Server ยังไม่พร้อม ให้ลองใหม่
+    }
+
+    await wait(5000);
+  }
+
+  return false;
+}
+
 export default function Lobby() {
   // --- Socket Connection ---
   const socket: Socket = useMemo(
@@ -83,7 +107,7 @@ export default function Lobby() {
 
   // --- Socket Effects ---
   useEffect(() => {
-    socket.connect();
+    let active = true;
 
     const resetGameState = () => {
       setMyRole(null);
@@ -194,7 +218,26 @@ export default function Lobby() {
     socket.on("voting-result", onVotingResult);
     socket.on("game-reset", onGameReset);
 
+    const connectWhenReady = async () => {
+      setConnected(false);
+      setError("กำลังปลุก Server กรุณารอสักครู่...");
+
+      const ready = await wakeServer();
+
+      if (!active) return;
+
+      if (ready) {
+        setError("");
+        socket.connect();
+      } else {
+        setError("Server ยังไม่พร้อม กรุณารีเฟรชหน้าเว็บเพื่อลองอีกครั้ง");
+      }
+    };
+
+    void connectWhenReady();
+
     return () => {
+      active = false;
       socket.off("connect", onConnect);
       socket.off("disconnect", onDisconnect);
       socket.off("room-created", onRoomCreated);
@@ -279,7 +322,6 @@ export default function Lobby() {
   const isHost = room?.players.find((player) => player.isHost)?.id === socket.id;
 
   // แยกหน้าจอตามสถานะเกม
-  // LOBBY ที่มี myRole แล้ว = ช่วงสั้นๆ ที่ได้รับบทบาทแต่ห้องยังไม่อัปเดตเป็น STARTING
   const screen:
     | "join"
     | "lobby"
@@ -375,7 +417,7 @@ export default function Lobby() {
           />
         )}
 
-        {/* หน้าผลชนะ: แยกออกมาเป็นหน้าเต็มของตัวเอง ไม่มีกระดานวาด */}
+        {/* หน้าผลชนะ */}
         {screen === "result" && room && votingResult && (
           <ResultScreen
             result={votingResult}
@@ -387,7 +429,7 @@ export default function Lobby() {
           />
         )}
 
-        {/* หน้าเตรียมตัว: นับถอยหลังก่อนเริ่มวาด */}
+        {/* หน้าเตรียมตัว */}
         {screen === "ready" && (
           <ReadyScreen
             myRole={myRole}
@@ -396,8 +438,7 @@ export default function Lobby() {
           />
         )}
 
-        {/* หน้าวาด และหน้าโหวต แยกเป็นคนละหน้า
-            แต่ DrawingBoard ต้องคงอยู่ (แค่ซ่อน) ไม่งั้นภาพที่วาดไว้จะหาย */}
+        {/* หน้าวาด และหน้าโหวต */}
         {(screen === "drawing" || screen === "voting") && (
           <div className="space-y-6">
             {screen === "drawing" && (
