@@ -1,0 +1,10 @@
+{
+  "name": "secret-stroke",
+  "private": true,
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:server": "pnpm --filter server start:dev",
+    "build:web": "pnpm --filter web build",
+    "build:server": "pnpm --filter server build"
+  }
+}

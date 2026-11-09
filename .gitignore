@@ -1,0 +1,32 @@
+# dependencies
+node_modules/
+
+# build output
+.next/
+dist/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# env (ห้ามขึ้น git เพราะมักมี secret)
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# cache / test
+.turbo/
+coverage/
+.eslintcache
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/
