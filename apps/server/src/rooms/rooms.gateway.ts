@@ -8,6 +8,7 @@ import {
 } from '@nestjs/websockets';
 import { randomInt } from 'node:crypto';
 import type { Server, Socket } from 'socket.io';
+import { NestFactory } from '@nestjs/core';
 
 type PlayerRole = 'ARTIST' | 'IMPOSTOR';
 // เพิ่ม VOTING (กำลังโหวต) และ RESULT (แสดงผลโหวต)
@@ -52,9 +53,15 @@ interface GameRoom {
 const VOTE_DURATION_MS = 45_000;
 const READY_DURATION_MS = 6_000;
 
+const allowedOrigins = (
+  process.env.CLIENT_ORIGINS ?? 'http://localhost:3000,http://127.0.0.1:3000'
+)
+  .split(',')
+  .map((origin) => origin.trim());
+
 @WebSocketGateway({
   cors: {
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: allowedOrigins,
     credentials: true,
   },
 })

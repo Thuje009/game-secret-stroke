@@ -1,6 +1,11 @@
-
 import { NestFactory } from '@nestjs/core';
 import { AppModule, ObserveInstrument } from './app.module.js';
+
+const allowedOrigins = (
+  process.env.CLIENT_ORIGINS ?? 'http://localhost:3000,http://127.0.0.1:3000'
+)
+  .split(',')
+  .map((origin) => origin.trim());
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule, {
@@ -8,11 +13,11 @@ async function bootstrap() {
   });
 
   app.enableCors({
-    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    origin: allowedOrigins,
     credentials: true,
   });
 
-  await app.listen(process.env.PORT ?? 3001);
+  await app.listen(process.env.PORT ?? 3001, '0.0.0.0');
 }
 
 await bootstrap();
